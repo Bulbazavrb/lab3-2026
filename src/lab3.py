@@ -1,198 +1,205 @@
-# ============================= УВАГА! =============================
-# Цей файл містить ПРИКЛАД виконання лабораторної роботи.
-# Ваше завдання - розробити ВЛАСНУ програму згідно з вашим варіантом.
-#
-# Ви можете використовувати цей код як зразок, але не копіювати його.
-# Повністю замініть цей код своєю реалізацією.
-#
-# Ваш код повинен відповідати таким вимогам:
-# 1. Обрана предметна область згідно з вашим варіантом.
-# 2. Реалізовано всі необхідні функції:
-#    - додавання, видалення, оновлення даних
-#    - пошук та фільтрація
-#    - обчислення статистик (середнє, min/max)
-#    - групування та агрегація
-# 3. Використано map(), filter(), reduce(), сортування, зрізи.
-# 4. Реалізовано операції з множинами та словниками.
-# 5. Створено інтерактивне меню для користувача.
-# =================================================================
+"""
+Лабораторна робота № 3: Структури даних у Python
+Варіант: 12
+Тема: Система управління ресторанним меню (страви, інгредієнти, ціни)
+Студент: Шульга Дмитро Ігорович
+Група: 12
+"""
 
 from collections import defaultdict
 from functools import reduce
-import datetime
+from typing import List, Dict, Set, Any
 
-# Приклад: Аналіз даних про продажі
-# ЗАМІНІТЬ ЦІ ДАНІ ТА ЛОГІКУ НА ВАШІ ВЛАСНІ
 
-# 1. Підготовка даних
-sales_data = [
-    {"date": "2023-01-01", "product": "Laptop", "category": "Electronics", "price": 1200, "quantity": 5},
-    {"date": "2023-01-02", "product": "Smartphone", "category": "Electronics", "price": 800, "quantity": 10},
-    {"date": "2023-01-03", "product": "T-shirt", "category": "Clothing", "price": 20, "quantity": 50},
-    {"date": "2023-01-04", "product": "Jeans", "category": "Clothing", "price": 60, "quantity": 30},
-    {"date": "2023-01-05", "product": "Keyboard", "category": "Electronics", "price": 75, "quantity": 20},
+# 1. Початкова база даних ресторанного меню (список словників із множинами)
+menu_data: List[Dict[str, Any]] = [
+    {
+        "id": 1,
+        "name": "Борщ український",
+        "category": "Перші страви",
+        "price": 160.0,
+        "weight_g": 350,
+        "ingredients": {"яловичина", "буряк", "капуста", "картопля", "морква", "сметана"}
+    },
+    {
+        "id": 2,
+        "name": "Грибна юшка",
+        "category": "Перші страви",
+        "price": 140.0,
+        "weight_g": 300,
+        "ingredients": {"білі гриби", "картопля", "цибуля", "морква", "вершки"}
+    },
+    {
+        "id": 3,
+        "name": "Стейк Рібай",
+        "category": "Основні страви",
+        "price": 450.0,
+        "weight_g": 300,
+        "ingredients": {"яловичина", "розмарин", "часник", "вершкове масло"}
+    },
+    {
+        "id": 4,
+        "name": "Вареники з картоплею",
+        "category": "Основні страви",
+        "price": 130.0,
+        "weight_g": 250,
+        "ingredients": {"борошно", "картопля", "цибуля", "вершкове масло", "сметана"}
+    },
+    {
+        "id": 5,
+        "name": "Салат Цезар",
+        "category": "Салати",
+        "price": 210.0,
+        "weight_g": 220,
+        "ingredients": {"куряче філе", "салат ромен", "помідори чері", "пармезан", "соус цезар"}
+    },
+    {
+        "id": 6,
+        "name": "Салат Грецький",
+        "category": "Салати",
+        "price": 175.0,
+        "weight_g": 240,
+        "ingredients": {"помідори", "огірки", "сир фета", "маслини", "оливкова олія"}
+    },
+    {
+        "id": 7,
+        "name": "Чизкейк Нью-Йорк",
+        "category": "Десерти",
+        "price": 150.0,
+        "weight_g": 150,
+        "ingredients": {"крем-сир", "пісочне печиво", "вершкове масло", "ваніль"}
+    },
+    {
+        "id": 8,
+        "name": "Узвар",
+        "category": "Напої",
+        "price": 50.0,
+        "weight_g": 400,
+        "ingredients": {"сухофрукти", "яблука", "груші", "мед"}
+    }
 ]
 
-# 2. Функції для роботи з даними
-def add_sale(data, sale):
-    """Додає новий запис про продаж."""
-    data.append(sale)
-    print("Продаж додано успішно.")
 
-def remove_sale(data, index):
-    """Видаляє запис про продаж за індексом."""
-    if 0 <= index < len(data):
-        del data[index]
-        print("Продаж видалено успішно.")
-    else:
-        print("Невірний індекс.")
+# 2. Функції базового управління (CRUD)
 
-def update_sale(data, index, key, value):
-    """Оновлює інформацію про продаж."""
-    if 0 <= index < len(data):
-        # Перетворення значення до відповідного типу
-        if key in ['price', 'quantity']:
-            try:
-                value = float(value) if key == 'price' else int(value)
-            except ValueError:
-                print(f"Невірний тип значення для ключа '{key}'")
-                return
-        data[index][key] = value
-        print("Інформацію оновлено успішно.")
-    else:
-        print("Невірний індекс.")
+def add_dish(data: List[Dict[str, Any]], dish: Dict[str, Any]) -> None:
+    """Додає нову страву до меню з унікальним числовим ID."""
+    new_id = max([d["id"] for d in data], default=0) + 1
+    dish["id"] = new_id
+    data.append(dish)
+    print(f"-> Страву '{dish['name']}' успішно додано під ID #{new_id}.")
 
-def find_sales_by_product(data, product):
-    """Знаходить всі продажі конкретного продукту."""
-    return list(filter(lambda x: x["product"].lower() == product.lower(), data))
 
-# 3. Специфічні функції аналізу
-def calculate_total_sales(data):
-    """Обчислює загальну суму продажів."""
-    return reduce(lambda acc, sale: acc + sale["price"] * sale["quantity"], data, 0)
+def remove_dish(data: List[Dict[str, Any]], dish_id: int) -> bool:
+    """Видаляє страву з меню за її ID."""
+    for index, dish in enumerate(data):
+        if dish["id"] == dish_id:
+            removed = data.pop(index)
+            print(f"-> Страву '{removed['name']}' (ID #{dish_id}) видалено.")
+            return True
+    print("-> Страву з таким ID не знайдено.")
+    return False
 
-def calculate_average_price(data):
-    """Обчислює середню ціну товару."""
-    prices = [sale["price"] for sale in data]
-    return sum(prices) / len(prices) if prices else 0
 
-# 4. Вбудовані функції та методи
-def sort_sales_by_date(data):
-    """Сортує продажі за датою."""
-    return sorted(data, key=lambda x: datetime.datetime.strptime(x["date"], "%Y-%m-%d"))
+def update_dish(data: List[Dict[str, Any]], dish_id: int, field: str, value: Any) -> bool:
+    """Оновлює поле страви із перевіркою коректності типів даних."""
+    for dish in data:
+        if dish["id"] == dish_id:
+            if field in ["price", "weight_g"]:
+                try:
+                    dish[field] = float(value) if field == "price" else int(value)
+                except ValueError:
+                    print("-> Помилка: ціна чи вага мають бути числами.")
+                    return False
+            elif field == "ingredients":
+                dish[field] = {item.strip().lower() for item in str(value).split(",") if item.strip()}
+            elif field in ["name", "category"]:
+                dish[field] = str(value).strip()
+            else:
+                print("-> Невідоме поле для редагування.")
+                return False
+            print(f"-> Поле '{field}' страви #{dish_id} успішно оновлено.")
+            return True
+    print("-> Страву з таким ID не знайдено.")
+    return False
 
-# 5. Робота з множинами та словниками
-def group_sales_by_category(data):
-    """Групує продажі за категоріями."""
-    categories = defaultdict(list)
-    for sale in data:
-        categories[sale["category"]].append(sale)
-    return dict(categories)
 
-def find_best_selling_product(data):
-    """Знаходить товар, який найкраще продається."""
+# 3. Пошук, фільтрація та операції з множинами
+
+def find_dishes_by_ingredient(data: List[Dict[str, Any]], ingredient: str) -> List[Dict[str, Any]]:
+    """Знаходить страви за інгредієнтом за допомогою функції filter()."""
+    target = ingredient.strip().lower()
+    return list(filter(lambda dish: target in dish["ingredients"], data))
+
+
+def filter_dishes_by_max_price(data: List[Dict[str, Any]], max_price: float) -> List[Dict[str, Any]]:
+    """Фільтрує меню за максимальною вартістю."""
+    return list(filter(lambda dish: dish["price"] <= max_price, data))
+
+
+def get_all_unique_ingredients(data: List[Dict[str, Any]]) -> Set[str]:
+    """Формує повний перелік усіх унікальних інгредієнтів через об'єднання множин (union)."""
     if not data:
-        return None
-    products = defaultdict(int)
-    for sale in data:
-        products[sale["product"]] += sale["quantity"]
-    return max(products, key=products.get)
+        return set()
+    return set().union(*(dish["ingredients"] for dish in data))
 
-# 6. Інтерактивне меню
-def print_menu():
-    """Виводить меню опцій."""
-    print("\n==== Меню аналізу продажів (ПРИКЛАД) ====")
-    print("1. Показати всі продажі")
-    print("2. Додати новий продаж")
-    print("3. Видалити продаж")
-    print("4. Оновити інформацію про продаж")
-    print("5. Знайти продажі за назвою товару")
-    print("6. Обчислити загальну суму продажів")
-    print("7. Групувати продажі за категоріями")
-    print("8. Сортувати продажі за датою")
-    print("9. Знайти товар, який найкраще продається")
-    print("10. Обчислити середню ціну товару")
-    print("0. Вийти")
 
-def main():
-    """Головна функція програми."""
-    global sales_data
-    while True:
-        print_menu()
-        choice = input("Оберіть опцію: ")
+def find_dishes_without_allergens(data: List[Dict[str, Any]], allergens: Set[str]) -> List[Dict[str, Any]]:
+    """
+    Повертає страви без небажаних алергенів.
+    Використовує перетин множин (&).
+    """
+    return [dish for dish in data if not (dish["ingredients"] & allergens)]
 
-        if choice == "1":
-            if not sales_data:
-                print("Немає даних про продажі.")
-            for i, sale in enumerate(sales_data):
-                print(f"{i}: {sale}")
-        elif choice == "2":
-            try:
-                date = input("Введіть дату (YYYY-MM-DD): ")
-                datetime.datetime.strptime(date, "%Y-%m-%d") # перевірка формату
-                product = input("Введіть назву товару: ")
-                category = input("Введіть категорію: ")
-                price = float(input("Введіть ціну: "))
-                quantity = int(input("Введіть кількість: "))
-                new_sale = {"date": date, "product": product, "category": category, "price": price, "quantity": quantity}
-                add_sale(sales_data, new_sale)
-            except ValueError:
-                print("Помилка введення. Перевірте формат дати, ціни та кількості.")
-        elif choice == "3":
-            try:
-                index = int(input("Введіть індекс продажу для видалення: "))
-                remove_sale(sales_data, index)
-            except ValueError:
-                print("Невірний індекс. Введіть число.")
-        elif choice == "4":
-            try:
-                index = int(input("Введіть індекс продажу для оновлення: "))
-                if not (0 <= index < len(sales_data)):
-                    print("Невірний індекс.")
-                    continue
-                key = input("Введіть ключ для оновлення (date/product/category/price/quantity): ")
-                if key not in sales_data[0]:
-                    print("Невірний ключ.")
-                    continue
-                value = input("Введіть нове значення: ")
-                update_sale(sales_data, index, key, value)
-            except ValueError:
-                print("Невірний індекс. Введіть існуючий числовий індекс.")
-        elif choice == "5":
-            product = input("Введіть назву товару для пошуку: ")
-            results = find_sales_by_product(sales_data, product)
-            if results:
-                for sale in results:
-                    print(sale)
-            else:
-                print(f"Продажі для товару '{product}' не знайдено.")
-        elif choice == "6":
-            total = calculate_total_sales(sales_data)
-            print(f"Загальна сума продажів: {total}")
-        elif choice == "7":
-            grouped = group_sales_by_category(sales_data)
-            for category, sales in grouped.items():
-                print(f"\nКатегорія: {category}:")
-                for sale in sales:
-                    print(f"  {sale}")
-        elif choice == "8":
-            sorted_sales = sort_sales_by_date(sales_data)
-            for sale in sorted_sales:
-                print(sale)
-        elif choice == "9":
-            best_product = find_best_selling_product(sales_data)
-            if best_product:
-                print(f"Товар, який найкраще продається: {best_product}")
-            else:
-                print("Немає даних для аналізу.")
-        elif choice == "10":
-            avg_price = calculate_average_price(sales_data)
-            print(f"Середня ціна товару: {avg_price:.2f}")
-        elif choice == "0":
-            print("Дякуємо за використання програми!")
-            break
-        else:
-            print("Невірний вибір. Спробуйте ще раз.")
 
-if __name__ == "__main__":
-    main()
+# 4. Обчислення статистик (map, reduce, min/max)
+
+def calculate_average_price(data: List[Dict[str, Any]]) -> float:
+    """Обчислює середню ціну позицій меню за допомогою map()."""
+    if not data:
+        return 0.0
+    prices = list(map(lambda d: d["price"], data))
+    return round(sum(prices) / len(prices), 2)
+
+
+def calculate_total_menu_value(data: List[Dict[str, Any]]) -> float:
+    """Обчислює вартість усього меню за допомогою reduce()."""
+    if not data:
+        return 0.0
+    return round(reduce(lambda acc, d: acc + d["price"], data, 0.0), 2)
+
+
+def get_price_extremums(data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Знаходить найдорожчу та найдешевшу страву меню."""
+    if not data:
+        return {}
+    cheapest = min(data, key=lambda d: d["price"])
+    expensive = max(data, key=lambda d: d["price"])
+    return {"cheapest": cheapest, "expensive": expensive}
+
+
+# 5. Групування, сортування та зрізи
+
+def group_dishes_by_category(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    """Групує страви за категоріями за допомогою defaultdict."""
+    grouped = defaultdict(list)
+    for dish in data:
+        grouped[dish["category"]].append(dish)
+    return dict(grouped)
+
+
+def get_top_expensive_dishes(data: List[Dict[str, Any]], limit: int = 3) -> List[Dict[str, Any]]:
+    """
+    Сортує страви за спаданням ціни та повертає топ-N найдорожчих позицій
+    за допомогою sorted() та зрізів списку [:limit].
+    """
+    sorted_dishes = sorted(data, key=lambda d: d["price"], reverse=True)
+    return sorted_dishes[:limit]
+
+
+# 6. Допоміжні функції інтерфейсу
+
+def format_dish(dish: Dict[str, Any]) -> str:
+    """Форматує інформацію про страву для зручного виведення."""
+    ingr_str = ", ".join(sorted(dish["ingredients"]))
+    return (f
